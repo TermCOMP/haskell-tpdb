@@ -1,4 +1,4 @@
-{-# language OverloadedStrings #-}
+{-# language OverloadedStrings, GADTs #-}
 
 module TPDB.Convert where
 
