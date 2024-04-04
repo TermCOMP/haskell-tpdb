@@ -40,6 +40,8 @@ trs rs = [xml|
 <rules>
   $forall u <- D.strict_rules rs
     ^{rule u}
+  $forall u <- D.cond_rules rs
+    ^{cond_rule u}
   $if not (null (D.weak_rules rs))
     <relrules>
       $forall u <- D.weak_rules rs
@@ -56,7 +58,20 @@ rule (l,r) = [xml|
   <lhs>^{term l}
   <rhs>^{term r}
 |]
-  
+
+cond_rule (l,r,cs) = [xml|
+<rule>
+  <lhs>^{term l}
+  <rhs>^{term r}
+  <conditions>
+    $forall c <- cs
+      ^{cond c}
+|]
+
+cond c = [xml|
+  <condition>^{rule c}
+|]
+
 term :: D.Term D.Identifier D.Identifier -> [X.Node]
 term t = case t of
   D.Var v -> [xml|
