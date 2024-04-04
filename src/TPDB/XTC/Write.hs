@@ -51,6 +51,8 @@ trs rs = [xml|
     <funcsym>
       <name>#{T.pack $ show f}
       <arity>#{T.pack $ show $ D.arity f}
+$if not (null (D.cond_rules rs))
+  <conditiontype>ORIENTED
 |]
 
 rule (l,r) = [xml|
