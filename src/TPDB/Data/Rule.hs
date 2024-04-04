@@ -20,13 +20,19 @@ data Rule a = Rule
     deriving ( Eq, Ord, Typeable )
 
 strict :: Rule a -> Bool
-strict u = case relation u of Strict -> True ; _ -> False
+strict u = unconditional u && case relation u of Strict -> True ; _ -> False
 
 weak :: Rule a -> Bool
-weak u = case relation u of Weak -> True ; _ -> False
+weak u = unconditional u && case relation u of Weak -> True ; _ -> False
+
+unconditional :: Rule a -> Bool
+unconditional = null . conditions
+
+conditional :: Rule a -> Bool
+conditional = not . unconditional
 
 equal :: Rule a -> Bool
-equal u = case relation u of Equal -> True ; _ -> False
+equal u = unconditional u && case relation u of Equal -> True ; _ -> False
 
 instance Functor Rule where
     fmap f u = u { lhs = f $ lhs u, rhs = f $ rhs u, conditions = map (bimap f f) $ conditions u }

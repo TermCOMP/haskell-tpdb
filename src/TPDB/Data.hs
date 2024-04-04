@@ -80,6 +80,8 @@ instance Eq r => Eq (RS s r) where
 instance Functor (RS s) where
     fmap f rs = rs { rules = map (fmap f) $ rules rs }
 
+cond_rules sys =
+  do u <- rules sys; guard $ conditional u ; return (lhs u, rhs u, conditions u)
 strict_rules sys =
     do u <- rules sys ; guard $ strict u ; return ( lhs u, rhs u )
 weak_rules sys =
