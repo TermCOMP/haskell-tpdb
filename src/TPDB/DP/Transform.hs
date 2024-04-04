@@ -36,7 +36,7 @@ pattern Auxiliary a = Marked_Imp { mark = Aux, contents = a }
 isOriginal m = mark m == Orig
 isMarked   m = mark m == Mark
 
-instance Hashable a => Hashable (Marked a) 
+instance Hashable a => Hashable (Marked a)
 
 instance Pretty a => Pretty ( Marked a) where
    pretty m = let p = pretty (contents m) in case mark m of
@@ -45,10 +45,10 @@ instance Pretty a => Pretty ( Marked a) where
        Aux -> p
 
 mark_top :: TermC v a => Term v a -> Term v (Marked a)
-mark_top  (Node f args) = 
+mark_top  (Node f args) =
           Node (Marked f) $ map (tmap Original) args
 
-defined s = S.fromList $ do 
+defined s = S.fromList $ do
                 u <- rules s
                 let Node f args = lhs u
                 -- will raise exception if lhs is variable
@@ -57,37 +57,40 @@ defined s = S.fromList $ do
 -- | compute the DP transformed system.
 
 dp :: (Eq v, Ord s, TermC v s)
-   => RS s (Term v s) 
+   => RS s (Term v s)
    -> RS (Marked s) (Term v (Marked s))
-dp s = 
-   let os = map ( \ u -> Rule { relation = Weak
-                               , lhs = tmap Original $ lhs u  
-                               , rhs = tmap Original $ rhs u  
+dp s =
+   let os = map ( \ u -> if conditions u /= [] then error "DP transformation does not support conditional rules" else
+                          Rule { relation = Weak
+                               , lhs = tmap Original $ lhs u
+                               , rhs = tmap Original $ rhs u
                                , top = False
                                , original_variable = original_variable u
+                               , conditions = []
                                } )
            $ rules s
        def = defined s
-       us = do 
+       us = do
             u <- rules s
             let -- ssubs = S.fromList $ strict_subterms $ lhs u
                 walk r = if  -- S.member r ssubs
                           isStrictSubtermOf r (lhs u)
                          then [] else case r of
-                    -- will raise exception if rhs contains 
+                    -- will raise exception if rhs contains
                     -- a variable that is not in lhs
-                    Node f args -> 
+                    Node f args ->
                         ( if S.member f def then (r :) else id )
                         ( args >>= walk )
             r <- walk $ rhs u
             return $ Rule { relation = Strict
                           , lhs = mark_top $ lhs u
-                          , rhs = mark_top r 
+                          , rhs = mark_top r
                           , top = True
                           , original_variable = original_variable u
+                          , conditions = []
                           }
    in RS { signature = map Marked ( S.toList def )
                      ++ map Original ( signature s )
          , rules = us ++ os
-         , separate = separate s 
-         } 
+         , separate = separate s
+         }

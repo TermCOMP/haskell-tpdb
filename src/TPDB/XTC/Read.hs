@@ -45,9 +45,9 @@ getProblem = element "problem" >=> \ c -> do
          [ "OUTERMOST" ] -> Just Outermost
          [] -> Nothing
          _ -> error "strategy"
-    rs <- c $/ element "trs" >=> getTRS         
+    rs <- c $/ element "trs" >=> getTRS
     let stt = c $/ element "startterm" &/ getStartterm
-    sig <- c $/ element "trs" >=> getSignature 
+    sig <- c $/ element "trs" >=> getSignature
     return $ Problem { trs = rs
                         , TPDB.Data.strategy = st
                         , TPDB.Data.full_signature = sig
@@ -57,6 +57,11 @@ getProblem = element "problem" >=> \ c -> do
                              [x] -> Just x
                         , attributes = compute_attributes $ rules rs
                         }
+
+getConditions :: Cursor -> [(Term Identifier Identifier, Term Identifier Identifier)]
+getConditions =
+  element "condition" >=> (\c ->
+    zip (c $/ element "lhs" &/ getTerm) (c $/ element "rhs" &/ getTerm))
 
 getTerm :: Cursor -> [ Term Identifier Identifier ]
 getTerm = getVar <> getFunApp
@@ -70,17 +75,17 @@ getFunApp = element "funapp" >=> \ c -> do
   let args = c $/ element "arg" &/ getTerm
       f = mk (length args) $ nm
   return $ Node f args
-          
 
-        
+
+
 
 getStartterm =
      (element "constructor-based" &| const  Startterm_Constructor_based )
-  <> (element "full" &| const Startterm_Full   ) 
+  <> (element "full" &| const Startterm_Full   )
 
 getTRS c = do
     sig <- getSignature c
-    let str   = c $/ element "rules" >=> getRulesWith Strict 
+    let str   = c $/ element "rules" >=> getRulesWith Strict
         nostr = c $/ element "rules" &/ ( element "relrules" >=> getRulesWith Weak )
     -- FIXME: check that symbols are use with correct arity
     return $ RS { signature = case sig of
@@ -114,7 +119,8 @@ getRulesWith s c =
   return ( c $/ ( element "rule" >=> getRule s ) )
 
 getRule :: Relation -> Cursor -> [ Rule (Term Identifier Identifier) ]
-getRule s c = 
-  ( \ l r -> Rule {lhs=l,relation=s,rhs=r,top=False,original_variable=Nothing})
+getRule s c =
+  let conds = c $/ element "conditions" &/ getConditions in
+  ( \ l r -> Rule {lhs=l,relation=s,rhs=r,top=False,original_variable=Nothing, conditions=conds})
     <$> (c $/ element "lhs" &/ getTerm) <*> (c $/ element "rhs" &/ getTerm)
 

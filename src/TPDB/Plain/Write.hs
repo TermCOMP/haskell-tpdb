@@ -1,4 +1,4 @@
--- | the "old" TPDB format 
+-- | the "old" TPDB format
 -- cf. <http://www.lri.fr/~marche/tpdb/format.html>
 
 {-# language FlexibleContexts #-}
@@ -22,23 +22,25 @@ instance ( TermC v s, Pretty v, Pretty s ) => Pretty ( Term v s ) where
     pretty t = case t of
         Var v -> pretty v
         Node f xs -> case xs of
-            [] -> pretty f 
+            [] -> pretty f
             _  -> pretty f <+> ( parens $ fsep $ punctuate comma $ map pretty xs )
 
-class PrettyTerm a where 
+class PrettyTerm a where
     prettyTerm :: a -> Doc ann
 
 instance PrettyTerm a => Pretty ( Rule a ) where
-    pretty u = sep [ prettyTerm $ lhs u
-                   , ( case relation u of 
-                         Strict -> "->" 
+    pretty u = sep $ [ prettyTerm $ lhs u
+                   , ( case relation u of
+                         Strict -> "->"
                          Weak -> "->="
-                         Equal -> "=" 
+                         Equal -> "="
                    -- FIXME: implement "top" annotation
                      ) <+> prettyTerm ( rhs u )
-                   ]
+                   ] ++ case conditions u of
+                    [] -> []
+                    conds -> "<=" : (conds >>= (\(l,r) -> [prettyTerm l, "->", prettyTerm r]))
 
-instance Pretty s => PrettyTerm [s] where    
+instance Pretty s => PrettyTerm [s] where
     prettyTerm xs = hsep $ map pretty xs
 
 instance ( TermC v s, Pretty v, Pretty s ) => PrettyTerm ( Term v s ) where
@@ -52,7 +54,7 @@ instance ( Pretty s, PrettyTerm r, Variables (RS s r)
           vars = parens $ "VAR" <+> vcat (map pretty vs)
           ruls = parens $ "RULES" <+>
             vcat ( ( if separate sys then punctuate comma else id )
-                 $ map pretty $ rules sys 
+                 $ map pretty $ rules sys
                  )
       in  if null vs then ruls else vcat [vars, ruls]
         -- FIXME: output strategy, theory
@@ -71,12 +73,12 @@ instance ( TermC s r, Pretty s, Pretty r, Variables (Term s r) ) => Pretty ( Pro
        [ pretty $ trs p
        , if null rms then empty
          else parens $ sep $ "STRATEGY" : "CONTEXTSENSITIVE" : rms
-       , case strategy p of  
+       , case strategy p of
              Nothing -> empty
              Just s -> sep [ "strategy"
                             , fromString ( show s ) ]
-       , case startterm p of  
+       , case startterm p of
              Nothing -> empty
              Just s -> sep [ "startterm"
-                            , fromString ( show s ) ] 
+                            , fromString ( show s ) ]
        ]

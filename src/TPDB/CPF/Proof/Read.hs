@@ -17,7 +17,7 @@ import Control.Arrow.ArrowList
 import Control.Arrow.ArrowTree
 
 import qualified TPDB.CPF.Proof.Write as W -- for testing
-import qualified Text.XML.HXT.Arrow.XmlState as X 
+import qualified Text.XML.HXT.Arrow.XmlState as X
 
 -}
 
@@ -30,13 +30,13 @@ import Control.Monad.Catch
 
 import TPDB.Pretty
 
-{- | dangerous: 
+{- | dangerous:
 not all constructor arguments will be set.
 the function produces something like
 
-      CertificationProblem { input = CertificationProblemInput 
+      CertificationProblem { input = CertificationProblemInput
                           , proof = TrsTerminationProof undefined
-                          }  
+                          }
 -}
 
 readCP :: T.Text -> Either SomeException [CertificationProblem]
@@ -61,7 +61,7 @@ element1 name c =
 
 
 fromDoc :: Cursor -> [ CertificationProblem ]
-fromDoc = element1 "certificationProblem" >=> \ c -> 
+fromDoc = element1 "certificationProblem" >=> \ c ->
   ( CertificationProblem
      <$> (c $/ element "input" &/ getInput )
      <*> (c $/ element "cpfVersion" &/ content )
@@ -73,8 +73,8 @@ getInput =  getTerminationInput
    <> getComplexityInput
    <> getACTerminationInput
 
-getTerminationInput c = c $| element "trsInput" &/ getTrsInput &| 
-   \ i -> TrsInput $ RS { rules = i , separate = False }   
+getTerminationInput c = c $| element "trsInput" &/ getTrsInput &|
+   \ i -> TrsInput $ RS { rules = i , separate = False }
 
 getACTerminationInput = element "acRewriteSystem" >=> \ c -> do
     let as = c $/ element "Asymbols" &/ getSymbol
@@ -89,15 +89,15 @@ getACTerminationInput = element "acRewriteSystem" >=> \ c -> do
 
 getComplexityInput = element "input" >=> \ c -> do
     trsI <- c $/ element "complexityInput" &/ element "trsInput" &/ getTrsInput
-    cm <- c $/ getComplexityMeasure 
-    cc <- c $/ getComplexityClass 
+    cm <- c $/ getComplexityMeasure
+    cc <- c $/ getComplexityClass
     return $ ComplexityInput
         { trsinput_trs = RS { rules = trsI, separate = False }
         , complexityMeasure = cm
         , complexityClass = cc
         }
 
-getComplexityMeasure = 
+getComplexityMeasure =
         getDummy "derivationalComplexity" DerivationalComplexity
     <>  getDummy "runtimeComplexity" RuntimeComplexity
 
@@ -114,8 +114,8 @@ getRulesWith s =  element1 "rules" >=> \ c ->
   return ( c $/ ( element "rule" >=> getRule s ) )
 
 getRule :: Relation -> Cursor -> [ Rule (Term Identifier Symbol) ]
-getRule s c = 
-  ( \ l r -> Rule {lhs=l,relation=s,rhs=r,top=False, original_variable=Nothing})
+getRule s c =
+  ( \ l r -> Rule {lhs=l,relation=s,rhs=r,top=False, original_variable=Nothing, conditions=[]})
     <$> (c $/ element "lhs" &/ getTerm) <*> (c $/ element "rhs" &/ getTerm)
 
 getProof :: Cursor -> [ Proof ]
@@ -146,4 +146,4 @@ getFunApp = element "funapp" >=> \ c -> do
 
 
 getSymbol :: Cursor -> [ Symbol ]
-getSymbol = element1 "name" &/ \ c -> (SymName . mk 0) <$> content c 
+getSymbol = element1 "name" &/ \ c -> (SymName . mk 0) <$> content c

@@ -2,11 +2,12 @@ module TPDB.Data.Rule where
 
 import TPDB.Data.Identifier
 import Data.Typeable
+import Data.Bifunctor ( Bifunctor(bimap) )
 
 data Relation = Strict |  Weak | Equal deriving ( Eq, Ord, Typeable, Show )
 
 data Rule a = Rule
-  { lhs :: !a, rhs :: !a 
+  { lhs :: !a, rhs :: !a
   , relation :: !Relation
   , top :: !Bool
   -- TPDB (XTC) represents SRS as TRS,
@@ -14,6 +15,7 @@ data Rule a = Rule
   -- and when we convert back (as we need for CPF),
   -- need to use the original variable in the rule
   , original_variable :: !(Maybe Identifier)
+  , conditions :: ![(a, a)]
   }
     deriving ( Eq, Ord, Typeable )
 
@@ -26,5 +28,5 @@ weak u = case relation u of Weak -> True ; _ -> False
 equal :: Rule a -> Bool
 equal u = case relation u of Equal -> True ; _ -> False
 
-instance Functor Rule where 
-    fmap f u = u { lhs = f $ lhs u, rhs = f $ rhs u } 
+instance Functor Rule where
+    fmap f u = u { lhs = f $ lhs u, rhs = f $ rhs u, conditions = map (bimap f f) $ conditions u }

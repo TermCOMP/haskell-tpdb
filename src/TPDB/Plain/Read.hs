@@ -37,7 +37,7 @@ srs s = case Text.Parsec.parse reader "input" s of
     Left err -> Left $ show err
     Right t  -> Right t
 
--- type Parser = Parsec ByteString () 
+-- type Parser = Parsec ByteString ()
 
 class Reader a where reader :: P.Parser a
 
@@ -56,9 +56,9 @@ lexer = makeTokenParser
        , reservedNames = [ "VAR", "THEORY", "STRATEGY", "RULES", "->", "->=" ]
        }
 
-instance Reader Identifier where 
+instance Reader Identifier where
     reader = do
-        i :: String <- identifier lexer 
+        i :: String <- identifier lexer
         return $ mk 0 $ fromString i
 
 instance Reader s =>  Reader [s] where
@@ -69,7 +69,7 @@ instance Reader s =>  Reader [s] where
 -- NOTE: this is more dangerous as we do not set the arity of identifiers
 instance ( TermC v Identifier, Reader v ) => Reader ( Term v Identifier ) where
     reader = do
-        f  <- reader 
+        f  <- reader
         xs <- ( parens lexer $ commaSep lexer reader ) <|> return []
         return $ Node ( f { arity = Prelude.length xs } ) xs
 
@@ -83,29 +83,29 @@ instance Reader u => Reader ( Rule u ) where
           -- <|> do reservedOp lexer "=" ; return Equal
         r <- reader
         return $ Rule { lhs = l, relation = rel, top = False, rhs = r
-                      , original_variable = Nothing
+                      , original_variable = Nothing, conditions = []
                       }
 
 data Declaration u
      = Var_Declaration [ Identifier ]
-     | Theory_Declaration 
-     | Strategy_Declaration 
+     | Theory_Declaration
+     | Strategy_Declaration
      | Rules_Declaration [ Rule u ]
      | Unknown_Declaration
-       -- ^ this is super-ugly: a parenthesized, possibly nested, 
+       -- ^ this is super-ugly: a parenthesized, possibly nested,
        -- possibly comma-separated, list of identifiers or strings
 
 declaration :: Reader u => Bool -> P.Parser ( Declaration u )
-declaration sep = parens lexer $ 
-           do reserved lexer "VAR" ; xs <- many reader 
+declaration sep = parens lexer $
+           do reserved lexer "VAR" ; xs <- many reader
               return $ Var_Declaration xs
-       <|> do reserved lexer "THEORY" 
+       <|> do reserved lexer "THEORY"
               error "TPDB.Plain.Read: parser for THEORY decl. missing"
-       <|> do reserved lexer "STRATEGY" 
+       <|> do reserved lexer "STRATEGY"
               error "TPDB.Plain.Read: parser for THEORY decl. missing"
-       <|> do reserved lexer "RULES" 
-              us <- if sep then do 
-                        many $ do 
+       <|> do reserved lexer "RULES"
+              us <- if sep then do
+                        many $ do
                             u <- reader ; optional $ comma lexer
                             return u
                         -- yes, TPDB contains some trailing commas, e.g., z008
@@ -114,12 +114,12 @@ declaration sep = parens lexer $
               return $ Rules_Declaration us
        <|> do anylist ; return Unknown_Declaration
 
-anylist = void 
-        $ commaSep lexer 
+anylist = void
+        $ commaSep lexer
         $ many ( void ( identifier lexer ) <|> parens lexer anylist )
 
 instance Reader ( SRS Identifier ) where
-    reader = do 
+    reader = do
         many space
         ds <- many $ declaration True
         return $ make_srs ds
@@ -130,20 +130,20 @@ instance Reader ( TRS Identifier Identifier ) where
         ds <- many $ declaration False
         return $ make_trs ds
 
-repair_signature_srs sys = 
+repair_signature_srs sys =
     let sig = nub $ do u <- rules sys ; lhs u ++ rhs u
     in  sys { signature = sig }
 
 make_srs :: Eq s => [ Declaration [s] ] -> SRS s
 make_srs ds = repair_signature_srs $
-    let us = do Rules_Declaration us <- ds ; us        
+    let us = do Rules_Declaration us <- ds ; us
     in  RS { rules = us, separate = True }
 
-repair_signature_trs sys = 
+repair_signature_trs sys =
     let sig = nub $ do u <- rules sys ; lsyms ( lhs u ) ++ lsyms ( rhs u)
     in  sys { signature = sig }
 
-make_trs :: [ Declaration ( Term Identifier Identifier ) ] 
+make_trs :: [ Declaration ( Term Identifier Identifier ) ]
          -> TRS Identifier Identifier
 make_trs ds = repair_signature_trs $
     let vs = do Var_Declaration vs <- ds ; vs
@@ -155,7 +155,7 @@ make_trs ds = repair_signature_trs $
 repair_variables vars rules = do
     let xform ( Node c [] ) | c `elem` vars = Var c
         xform ( Node c args ) = Node c ( map xform args )
-    rule <- rules  
+    rule <- rules
     return $ rule { lhs = xform $ lhs rule
                   , rhs = xform $ rhs rule
                   }
