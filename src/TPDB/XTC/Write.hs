@@ -68,8 +68,10 @@ cond_rule (l,r,cs) = [xml|
       ^{cond c}
 |]
 
-cond c = [xml|
-  <condition>^{rule c}
+cond (l,r) = [xml|
+<condition>
+  <lhs>^{term l}
+  <rhs>^{term r}
 |]
 
 term :: D.Term D.Identifier D.Identifier -> [X.Node]
