@@ -65,8 +65,8 @@ trs rs (D.Signature sig) = [xml|
     <funcsym>
       <name>#{T.pack $ show $ D.fs_name f}
       <arity>#{T.pack $ show $ D.fs_arity f}
-      theory f
-      replacementmap f
+      ^{theory f}
+      ^{replacementmap f}
 
 $if not (null (D.cond_rules rs))
   <conditiontype>ORIENTED
