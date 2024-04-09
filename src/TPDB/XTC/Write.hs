@@ -63,7 +63,7 @@ trs rs (D.Signature sig) = [xml|
 <signature>
   $forall f <- sig
     <funcsym>
-      <name>#{T.pack $ show $ D.fs_name f}
+      <name>#{D.fs_name f}
       <arity>#{T.pack $ show $ D.fs_arity f}
       ^{theory f}
       ^{replacementmap f}
