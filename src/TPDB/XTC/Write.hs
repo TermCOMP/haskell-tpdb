@@ -38,7 +38,7 @@ strategy s = case s of
 theory f = case D.fs_theory f of
   Nothing -> [xml||]
   Just x -> [xml|
-    <theory>#{T.pack $ show $ D.fs_theory f}
+    <theory>#{T.pack $ show $ x}
   |]
 
 replacementmap f = case D.fs_replacementmap f of
