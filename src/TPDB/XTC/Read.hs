@@ -84,9 +84,9 @@ getFunApp = element "funapp" >=> \ c -> do
 
 getOrigfilename :: Cursor -> Maybe String
 getOrigfilename c =
-  case c $/ element "metainformation" &/ element "originalfilename" &/ read_content of
+  case c $/ element "metainformation" &/ element "originalfilename" &/ content of
   [] -> Nothing
-  xs -> Just $ concat xs
+  xs -> Just $ xs >>= ST.unpack
 
 getStartterm =
      (element "constructor-based" &| const  Startterm_Constructor_based )
