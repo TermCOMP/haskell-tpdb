@@ -27,7 +27,7 @@ document p = X.Document (X.Prologue [] Nothing []) root [] where
                   ,("xsi:noNamespaceSchemaLocation","xtc.xsd")
                   ])
       [xml|
-<trs>^{trs $ D.trs p}
+<trs>^{trs (D.trs p) (D.full_signature p)}
 $maybe s <- D.strategy p
   <strategy>^{strategy s}
 |]
@@ -35,8 +35,22 @@ $maybe s <- D.strategy p
 strategy s = case s of
   D.Full -> [xml|FULL|]
 
-trs :: D.TRS D.Identifier D.Identifier -> [X.Node]
-trs rs = [xml|
+theory f = case D.fs_theory f of
+  Nothing -> [xml||]
+  Just x -> [xml|
+    <theory>#{T.pack $ show $ D.fs_theory f}
+  |]
+
+replacementmap f = case D.fs_replacementmap f of
+  Nothing -> [xml||]
+  Just (D.Replacementmap xs) -> [xml|
+    <replacementmap>
+      $forall x <- xs
+        <entry>#{T.pack $ show $ x}
+  |]
+
+trs :: D.TRS D.Identifier D.Identifier -> D.Signature -> [X.Node]
+trs rs (D.Signature sig) = [xml|
 <rules>
   $forall u <- D.strict_rules rs
     ^{rule u}
@@ -47,10 +61,13 @@ trs rs = [xml|
       $forall u <- D.weak_rules rs
         ^{rule u}
 <signature>
-  $forall f <- D.signature rs
+  $forall f <- sig
     <funcsym>
-      <name>#{T.pack $ show f}
-      <arity>#{T.pack $ show $ D.arity f}
+      <name>#{T.pack $ show $ D.fs_name f}
+      <arity>#{T.pack $ show $ D.fs_arity f}
+      theory f
+      replacementmap f
+
 $if not (null (D.cond_rules rs))
   <conditiontype>ORIENTED
 |]

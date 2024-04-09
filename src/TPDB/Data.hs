@@ -114,6 +114,7 @@ data Problem v s =
              -- , metainformation :: Metainformation
              , startterm :: Maybe Startterm
              , attributes :: Attributes
+             , metainformation :: Metainformation
              }
 
 data Type = Termination | Complexity
@@ -121,6 +122,11 @@ data Type = Termination | Complexity
 
 data Strategy = Full | Innermost | Outermost
      deriving Show
+
+data Metainformation =
+  Metainformation { originalfilename :: Maybe String
+                  , xtcfilename :: Maybe String }
+      deriving Show
 
 -- | this is modelled after
 -- https://www.lri.fr/~marche/tpdb/format.html

@@ -21,20 +21,21 @@ import Data.Monoid ((<>))
 
 readProblemF :: FilePath -> IO ( Problem Identifier Identifier )
 readProblemF file = do
+  let path = Just $ show file
   doc <- Text.XML.readFile Text.XML.def file
-  case getProblem $ fromDocument doc of
+  case getProblem path $ fromDocument doc of
     [] -> error "input contains no XTC problem"
     [p] -> return p
     ps -> error "input contains more than one XTC problem"
 
 readProblemT :: LT.Text -> Either SomeException (Problem Identifier Identifier)
-readProblemT t = case ( getProblem . fromDocument ) <$> Text.XML.parseText Text.XML.def t of
+readProblemT t = case ( (getProblem Nothing) . fromDocument ) <$> Text.XML.parseText Text.XML.def t of
   Right [ p ] -> Right p
   Left ex -> Left ex
 
 
-getProblem :: Cursor -> [ Problem Identifier Identifier ]
-getProblem = element "problem" >=> \ c -> do
+getProblem :: Maybe String -> Cursor -> [ Problem Identifier Identifier ]
+getProblem path = element "problem" >=> \ c -> do
     let !ty = case c $| attribute "type" of
          [ "termination" ] -> Termination
          [ "complexity"  ] -> Complexity
@@ -48,6 +49,10 @@ getProblem = element "problem" >=> \ c -> do
     rs <- c $/ element "trs" >=> getTRS
     let stt = c $/ element "startterm" &/ getStartterm
     sig <- c $/ element "trs" >=> getSignature
+    let metainfo = Metainformation {
+      originalfilename = getOrigfilename c,
+      xtcfilename = path
+    }
     return $ Problem { trs = rs
                         , TPDB.Data.strategy = st
                         , TPDB.Data.full_signature = sig
@@ -56,6 +61,7 @@ getProblem = element "problem" >=> \ c -> do
                              [] -> Nothing
                              [x] -> Just x
                         , attributes = compute_attributes $ rules rs
+                        , metainformation = metainfo
                         }
 
 getConditions :: Cursor -> [(Term Identifier Identifier, Term Identifier Identifier)]
@@ -76,8 +82,11 @@ getFunApp = element "funapp" >=> \ c -> do
       f = mk (length args) $ nm
   return $ Node f args
 
-
-
+getOrigfilename :: Cursor -> Maybe String
+getOrigfilename c =
+  case c $/ element "metainformation" &/ element "originalfilename" &/ read_content of
+  [] -> Nothing
+  xs -> Just $ concat xs
 
 getStartterm =
      (element "constructor-based" &| const  Startterm_Constructor_based )
